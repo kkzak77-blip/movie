@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>札幌映画ポータル【最速予約版】</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 10px; line-height: 1.4; }
+    h2 { text-align: center; color: #fff; font-size: 1.1em; margin: 5px 0 10px 0; }
+    
+    .day-selector { display: flex; justify-content: space-between; gap: 4px; margin-bottom: 10px; }
+    .day-btn {
+      flex: 1; padding: 8px 0; border-radius: 6px; border: 1px solid #444;
+      background: #222; color: #aaa; font-size: 0.8em; font-weight: bold; cursor: pointer;
+    }
+    .day-btn.active { background: #00ffcc; color: #000; border-color: #00ffcc; }
+    .day-btn.today-marker { border: 1px solid #00ffcc; color: #00ffcc; }
+
+    #recommend-box {
+      background: linear-gradient(135deg, #333, #111);
+      border-radius: 12px; padding: 12px; margin-bottom: 15px; text-align: center;
+      border: 1px solid #444;
+    }
+    .rec-title { color: #00ffcc; font-weight: bold; font-size: 0.75em; margin-bottom: 3px; }
+    #recommend-msg { font-size: 0.95em; font-weight: bold; color: #fff; }
+
+    .grid-container { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .theater-card {
+      background: #1e1e1e; border-radius: 12px; border: 1px solid #333;
+      text-decoration: none; display: block; padding: 12px; position: relative;
+    }
+    .theater-name { font-weight: bold; font-size: 1em; color: #fff; margin-bottom: 8px; display: block; }
+    
+    .tag-container { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag { 
+      font-size: 0.7em; font-weight: bold; padding: 5px 10px; border-radius: 4px; 
+      color: #000; background: rgba(255, 255, 255, 0.9);
+      border: none; cursor: pointer;
+    }
+
+    .extra-price-bubble {
+      display: none; background: #00ffcc; color: #000; font-size: 0.8em;
+      font-weight: bold; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px;
+    }
+
+    .price-row { display: block; font-size: 0.8em; margin-bottom: 2px; }
+    .label { color: #888; display: inline-block; width: 95px; }
+    .val { color: #fff; font-weight: 500; }
+    .special-price { color: #ffeb3b; font-weight: bold; }
+
+    .frontier { border-left: 5px solid #e50914; }
+    .united   { border-left: 5px solid #0056b3; }
+    .toho     { border-left: 5px solid #ffcc00; }
+    .kino     { border-left: 5px solid #8e44ad; }
+  </style>
+</head>
+<body>
+
+  <h2>🎬 札幌映画スケジュール</h2>
+
+  <div class="day-selector">
+    <button class="day-btn" onclick="updateView(1)">月</button>
+    <button class="day-btn" onclick="updateView(2)">火</button>
+    <button class="day-btn" onclick="updateView(3)">水</button>
+    <button class="day-btn" onclick="updateView(4)">木</button>
+    <button class="day-btn" onclick="updateView(5)">金</button>
+    <button class="day-btn" onclick="updateView(6)">土</button>
+    <button class="day-btn" onclick="updateView(0)">日</button>
+  </div>
+
+  <div id="recommend-box">
+    <div class="rec-title" id="rec-date-label">判定中...</div>
+    <div id="recommend-msg">読み込み中...</div>
+  </div>
+
+  <div class="grid-container">
+    <div class="theater-card frontier">
+      <a href="https://www.cinemafrontier.net/cgi-bin/pc/site/det.cgi?tsc=1" target="_blank" style="text-decoration:none"><span class="theater-name">札幌シネマフロンティア</span></a>
+      <div class="tag-container"><span class="tag">通常のみ</span></div>
+      <div class="extra-price-bubble"></div>
+      <span class="price-row"><span class="label">通常/サービス:</span><span class="val" id="f-norm">2,000円</span></span>
+      <span class="price-row"><span class="label">会員(SCF):</span><span class="val">1,700円</span></span>
+      <span class="price-row"><span class="label">レイト(20時〜):</span><span class="val">1,500円</span></span>
+    </div>
+
+    <div class="theater-card united">
+      <a href="https://www.unitedcinemas.jp/sapporo/daily.php" target="_blank" style="text-decoration:none"><span class="theater-name">ユナイテッド・シネマ札幌</span></a>
+      <div class="tag-container">
+        <span class="tag" onclick="showTip(this, 'IMAX追加: 2D +700円 / 3D +1200円')">IMAX</span>
+        <span class="tag" onclick="showTip(this, '4DX追加: 2D +1000円 / 3D +1500円')">4DX</span>
+        <span class="tag" onclick="showTip(this, 'ScreenX追加: +700円')">SCREEN X</span>
+      </div>
+      <div class="extra-price-bubble"></div>
+      <span class="price-row"><span class="label">通常/サービス:</span><span class="val" id="u-norm">2,000円</span></span>
+      <span class="price-row"><span class="label">会員特典:</span><span class="val" id="u-member">1,300円〜</span></span>
+      <span class="price-row"><span class="label">備考:</span><span class="val">レイト割引なし</span></span>
+    </div>
+
+    <div class="theater-card toho">
+      <a href="https://hlo.tohotheater.jp/net/schedule/089/TNPI2000J01.do" target="_blank" style="text-decoration:none"><span class="theater-name">TOHOシネマズすすきの</span></a>
+      <div class="tag-container">
+        <span class="tag" onclick="showTip(this, 'Dolby Cinema追加: +600円')">Dolby Cinema</span>
+        <span class="tag" onclick="showTip(this, 'Dolby Atmos追加: +200円')">Atmos</span>
+        <span class="tag" onclick="showTip(this, '轟音上映: +200円')">轟音</span>
+        <span class="tag" onclick="showTip(this, 'プレミアム: +500円〜1000円')">プレミアム</span>
+      </div>
+      <div class="extra-price-bubble"></div>
+      <span class="price-row"><span class="label">通常/サービス:</span><span class="val" id="t-norm">2,000円</span></span>
+      <span class="price-row"><span class="label">独自割引:</span><span class="val" id="t-special">曜日別割引あり</span></span>
+      <span class="price-row"><span class="label">レイト(20時〜):</span><span class="val">1,500円</span></span>
+    </div>
+
+    <div class="theater-card kino">
+      <a href="https://www.theaterkino.net/tt.html" target="_blank" style="text-decoration:none"><span class="theater-name">シアターキノ</span></a>
+      <div class="tag-container"><span class="tag">ミニシアター</span></div>
+      <div class="extra-price-bubble"></div>
+      <span class="price-row"><span class="label">通常:</span><span class="val">1,800円</span></span>
+      <span class="price-row"><span class="label">会員:</span><span class="val">1,000円</span></span>
+    </div>
+  </div>
+
+  <script>
+    const days = ["日", "月", "火", "水", "木", "金", "土"];
+    const today = new Date().getDay();
+
+    function showTip(el, text) {
+      const bubble = el.parentElement.nextElementSibling;
+      bubble.innerText = text;
+      bubble.style.display = 'inline-block';
+      setTimeout(() => { bubble.style.display = 'none'; }, 5000);
+    }
+
+    function updateView(selectedDay) {
+      document.querySelectorAll('.day-btn').forEach((btn, index) => {
+        const btnDay = [1, 2, 3, 4, 5, 6, 0][index];
+        btn.classList.toggle('active', btnDay === selectedDay);
+        btn.classList.toggle('today-marker', btnDay === today);
+      });
+
+      document.getElementById('rec-date-label').innerText = days[selectedDay] + "曜日の最安値判定";
+      
+      document.getElementById('f-norm').innerText = "2,000円";
+      document.getElementById('u-norm').innerText = "2,000円";
+      document.getElementById('t-norm').innerText = "2,000円";
+      document.getElementById('t-special').innerText = "レイトショーがお得";
+
+      let msg = "今日はレイトショーや会員特典が狙い目です";
+
+      if (selectedDay === 1) { // 月
+        msg = "月曜：TOHOでauマンデイ(1,100円)が最強！";
+        document.getElementById('t-norm').innerHTML = '<span class="special-price">auマンデイ 1,100円</span>';
+      } else if (selectedDay === 2) { // 火
+        msg = "火曜：TOHO-ONEメンバーデー(会員1,300円)！";
+        document.getElementById('t-special').innerHTML = '<span class="special-price">メンバーデー 1,300円</span>';
+      } else if (selectedDay === 3) { // 水
+        msg = "水曜：TOHOウェンズデイ(誰でも1,300円)！";
+        document.getElementById('t-norm').innerHTML = '<span class="special-price">ウェンズデイ 1,300円</span>';
+      } else if (selectedDay === 4) { // 木
+        msg = "木曜：フロンティア・ユナイテッド・TOHO(セゾン) 1,300円！";
+        document.getElementById('f-norm').innerHTML = '<span class="special-price">サービスデー 1,300円</span>';
+        document.getElementById('u-norm').innerHTML = '<span class="special-price">サービスデー 1,300円</span>';
+        document.getElementById('t-special').innerHTML = '<span class="special-price">セゾン割引 1,200円</span>';
+      } else if (selectedDay === 5) { // 金
+        msg = "金曜：TOHO(FOD 1,200円)・ユナイテッド会員 1,300円！";
+        document.getElementById('t-special').innerHTML = '<span class="special-price">FODフライデー 1,200円</span>';
+      }
+
+      const uMember = document.getElementById('u-member');
+      if (selectedDay >= 1 && selectedDay <= 5) {
+        uMember.innerHTML = '<span class="special-price">会員平日 1,300円</span>';
+      } else {
+        uMember.innerHTML = '会員土日祝 1,500円';
+        if(selectedDay === 0) {
+            msg = "日曜：TOHOでJERAサンデー割引あり！";
+            document.getElementById('t-special').innerHTML = '<span class="special-price">JERAサンデー割引</span>';
+        }
+      }
+
+      document.getElementById('recommend-msg').innerText = msg;
+    }
+
+    window.onload = () => updateView(today);
+  </script>
+</body>
+</html>
