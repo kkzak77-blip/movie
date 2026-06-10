@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="名古屋映画">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>名古屋映画ポータル【最速予約版】</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+    }
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      color: #fff;
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+    .date-display {
+      text-align: center;
+      font-size: 14px;
+      color: #ff4757;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .cinema-block {
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .cinema-name {
+      font-size: 16px;
+      font-weight: bold;
+      border-left: 4px solid #ff4757;
+      padding-left: 8px;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #2a2a2a;
+      color: #aaa;
+    }
+    .today-highlight {
+      background-color: rgba(255, 71, 87, 0.2) !important;
+      font-weight: bold;
+      color: #ff4757;
+    }
+    .btn-reserve {
+      display: block;
+      background-color: #ff4757;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    .btn-reserve:hover {
+      background-color: #ff6b81;
+    }
+    .info-text {
+      color: #bbb;
+      font-size: 12px;
+      margin-top: 8px;
+      padding-left: 5px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎬 名古屋映画ポータル</h1>
+  <div class="date-display" id="today-string">📆 日付取得中...</div>
+
+  <div class="cinema-block">
+    <div class="cinema-name">ミッドランドスクエア シネマ（名駅）</div>
+    <table>
+      <tr>
+        <th id="th-mid-general">一般</th>
+        <th id="th-mid-service">中日シネマズ（水曜）</th>
+        <th id="th-mid-late">レイトショー</th>
+      </tr>
+      <tr>
+        <td id="td-mid-general">2,000円</td>
+        <td id="td-mid-service">1,300円</td>
+        <td id="td-mid-late">1,500円</td>
+      </tr>
+    </table>
+    <div class="info-text">
+      💡 【追加料金】ドルビーアトモス: +200円 / プレミアムシート: +1,000円
+    </div>
+    <a href="https://www.midland-sq-cinema.jp/" class="btn-reserve" target="_blank">ミッドランドで最速予約 ➔</a>
+  </div>
+
+  <div class="cinema-block">
+    <div class="cinema-name">109シネマズ名古屋（ささしま）</div>
+    <table>
+      <tr>
+        <th id="th-109-general">一般</th>
+        <th id="th-109-service">109シネマズデイ（水曜）</th>
+        <th id="th-109-late">レイトショー</th>
+      </tr>
+      <tr>
+        <td id="td-109-general">2,000円</td>
+        <td id="td-109-service">1,300円</td>
+        <td id="td-109-late">1,500円</td>
+      </tr>
+    </table>
+    <div class="info-text">
+      💡 【追加料金】IMAXレーザー: +700円 / 4DX: +1,100円 / エグゼクティブシート: +700円(会員無料)
+    </div>
+    <a href="https://109cinemas.net/nagoya/" class="btn-reserve" target="_blank">109シネマズで最速予約 ➔</a>
+  </div>
+
+  <script>
+    // 自動曜日判定システム
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const date = now.getDate();
+    const dayNum = now.getDay(); // 0:日, 1:月 ... 6:土
+    const dayStr = days[dayNum];
+
+    // 画面上に「〇月〇日（〇曜日）」を表示
+    document.getElementById('today-string').textContent = `📆 本日は ${month}月${date}日 (${dayStr}曜日)`;
+
+    // 曜日に応じた自動ハイライト処理
+    if (dayNum === 3) {
+      // 水曜日の場合（両館ともサービスデイ）
+      document.getElementById('th-mid-service').classList.add('today-highlight');
+      document.getElementById('td-mid-service').classList.add('today-highlight');
+      document.getElementById('th-109-service').classList.add('today-highlight');
+      document.getElementById('td-109-service').classList.add('today-highlight');
+    } else {
+      // 水曜以外は「一般料金」をハイライト
+      document.getElementById('th-mid-general').classList.add('today-highlight');
+      document.getElementById('td-mid-general').classList.add('today-highlight');
+      document.getElementById('th-109-general').classList.add('today-highlight');
+      document.getElementById('td-109-general').classList.add('today-highlight');
+    }
+  </script>
+
+</body>
+</html>
