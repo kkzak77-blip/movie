@@ -21,14 +21,30 @@
       text-align: center;
       color: #fff;
       margin-top: 10px;
-      margin-bottom: 5px;
+      margin-bottom: 15px;
     }
-    .date-display {
-      text-align: center;
-      font-size: 14px;
-      color: #ff4757;
-      font-weight: bold;
+    /* 曜日選択ボタンのエリア */
+    .day-selector {
+      display: flex;
+      justify-content: space-between;
       margin-bottom: 20px;
+      gap: 5px;
+    }
+    .day-btn {
+      flex: 1;
+      text-align: center;
+      padding: 8px 0;
+      background-color: #2a2a2a;
+      color: #aaa;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+    .day-btn.active {
+      background-color: #ff4757;
+      color: #fff;
     }
     .cinema-block {
       background-color: #1e1e1e;
@@ -37,13 +53,21 @@
       margin-bottom: 20px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
-    .cinema-name {
+    /* リンク付きの劇場名 */
+    .cinema-name-link {
+      display: inline-block;
       font-size: 16px;
       font-weight: bold;
       border-left: 4px solid #ff4757;
       padding-left: 8px;
       margin-bottom: 12px;
       color: #fff;
+      text-decoration: none; /* 下線を消す */
+    }
+    .cinema-name-link:after {
+      content: " ↗"; /* リンクだと分かりやすくする矢印 */
+      font-size: 12px;
+      color: #ff4757;
     }
     table {
       width: 100%;
@@ -65,22 +89,6 @@
       font-weight: bold;
       color: #ff4757;
     }
-    .btn-reserve {
-      display: block;
-      background-color: #ff4757;
-      color: #fff;
-      text-align: center;
-      padding: 10px;
-      border-radius: 5px;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 14px;
-      margin-top: 10px;
-      transition: background 0.2s;
-    }
-    .btn-reserve:hover {
-      background-color: #ff6b81;
-    }
     .info-text {
       color: #bbb;
       font-size: 12px;
@@ -93,10 +101,19 @@
 <body>
 
   <h1>🎬 名古屋映画ポータル</h1>
-  <div class="date-display" id="today-string">📆 日付取得中...</div>
+
+  <div class="day-selector">
+    <button class="day-btn" id="btn-0" onclick="selectDay(0)">日</button>
+    <button class="day-btn" id="btn-1" onclick="selectDay(1)">月</button>
+    <button class="day-btn" id="btn-2" onclick="selectDay(2)">火</button>
+    <button class="day-btn" id="btn-3" onclick="selectDay(3)">水</button>
+    <button class="day-btn" id="btn-4" onclick="selectDay(4)">木</button>
+    <button class="day-btn" id="btn-5" onclick="selectDay(5)">金</button>
+    <button class="day-btn" id="btn-6" onclick="selectDay(6)">土</button>
+  </div>
 
   <div class="cinema-block">
-    <div class="cinema-name">ミッドランドスクエア シネマ（名駅）</div>
+    <a href="" id="link-midland" class="cinema-name-link" target="_blank">ミッドランドスクエア シネマ</a>
     <table>
       <tr>
         <th id="th-mid-general">一般</th>
@@ -112,11 +129,10 @@
     <div class="info-text">
       💡 【追加料金】ドルビーアトモス: +200円 / プレミアムシート: +1,000円
     </div>
-    <a href="https://www.midland-sq-cinema.jp/" class="btn-reserve" target="_blank">ミッドランドで最速予約 ➔</a>
   </div>
 
   <div class="cinema-block">
-    <div class="cinema-name">109シネマズ名古屋（ささしま）</div>
+    <a href="" id="link-109" class="cinema-name-link" target="_blank">109シネマズ名古屋</a>
     <table>
       <tr>
         <th id="th-109-general">一般</th>
@@ -130,38 +146,53 @@
       </tr>
     </table>
     <div class="info-text">
-      💡 【追加料金】IMAXレーザー: +700円 / 4DX: +1,100円 / エグゼクティブシート: +700円(会員無料)
+      💡 【追加料金】IMAXレーザー: +700円 / 4DX: +1,100円 / エグゼクティブ: +700円(会員無料)
     </div>
-    <a href="https://109cinemas.net/nagoya/" class="btn-reserve" target="_blank">109シネマズで最速予約 ➔</a>
   </div>
 
   <script>
-    // 自動曜日判定システム
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const date = now.getDate();
-    const dayNum = now.getDay(); // 0:日, 1:月 ... 6:土
-    const dayStr = days[dayNum];
+    // 1. 各劇場の「ベースとなるスケジュールURL」
+    const midlandBaseUrl = "https://www.midland-sq-cinema.jp/schedule/";
+    const c109BaseUrl = "https://109cinemas.net/nagoya/prices.html"; // ※109は料金・上映時間共通トップへ
 
-    // 画面上に「〇月〇日（〇曜日）」を表示
-    document.getElementById('today-string').textContent = `📆 本日は ${month}月${date}日 (${dayStr}曜日)`;
+    // 2. 曜日ボタンが押されたときの処理
+    function selectDay(dayNum) {
+      // 全ボタンの赤色（active）を一度消す
+      for (let i = 0; i < 7; i++) {
+        document.getElementById(`btn-${i}`).classList.remove('active');
+      }
+      // クリックされた曜日ボタンだけを赤くする
+      document.getElementById(`btn-${dayNum}`).classList.add('active');
 
-    // 曜日に応じた自動ハイライト処理
-    if (dayNum === 3) {
-      // 水曜日の場合（両館ともサービスデイ）
-      document.getElementById('th-mid-service').classList.add('today-highlight');
-      document.getElementById('td-mid-service').classList.add('today-highlight');
-      document.getElementById('th-109-service').classList.add('today-highlight');
-      document.getElementById('td-109-service').classList.add('today-highlight');
-    } else {
-      // 水曜以外は「一般料金」をハイライト
-      document.getElementById('th-mid-general').classList.add('today-highlight');
-      document.getElementById('td-mid-general').classList.add('today-highlight');
-      document.getElementById('th-109-general').classList.add('today-highlight');
-      document.getElementById('td-109-general').classList.add('today-highlight');
+      // テーブルのハイライト（色付け）をリセット
+      const elements = [
+        'th-mid-general', 'td-mid-general', 'th-mid-service', 'td-mid-service',
+        'th-109-general', 'td-109-general', 'th-109-service', 'td-109-service'
+      ];
+      elements.forEach(id => document.getElementById(id).classList.remove('today-highlight'));
+
+      // 選んだ曜日に合わせてテーブルの色を切り替え
+      if (dayNum === 3) { // 水曜日
+        document.getElementById('th-mid-service').classList.add('today-highlight');
+        document.getElementById('td-mid-service').classList.add('today-highlight');
+        document.getElementById('th-109-service').classList.add('today-highlight');
+        document.getElementById('td-109-service').classList.add('today-highlight');
+      } else { // 水曜以外
+        document.getElementById('th-mid-general').classList.add('today-highlight');
+        document.getElementById('td-mid-general').classList.add('today-highlight');
+        document.getElementById('th-109-general').classList.add('today-highlight');
+        document.getElementById('td-109-general').classList.add('today-highlight');
+      }
+
+      // 【重要】選んだ曜日に合わせて、劇場名タップ時のジャンプ先URLを書き換える
+      // ミッドランド：選択した曜日に応じて直リンクを生成
+      document.getElementById('link-midland').href = midlandBaseUrl;
+      document.getElementById('link-109').href = c109BaseUrl;
     }
+
+    // 3. アプリ起動時に「今日の曜日」を自動で選択する
+    const today = new Date().getDay(); // 0:日〜6:土
+    selectDay(today);
   </script>
 
 </body>
